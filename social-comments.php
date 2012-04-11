@@ -2,7 +2,7 @@
 /**
 Plugin Name: Social Comments
 Plugin URI: http://sudarmuthu.com/wordpress/social-comments
-Description: Adds a Retweet button to your WordPress posts.
+Description: Get all your comments and discussions from social media sites into your blog.
 Donate Link: http://sudarmuthu.com/if-you-wanna-thank-me
 License: GPL
 Author: Sudar
