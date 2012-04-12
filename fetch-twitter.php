@@ -1,5 +1,6 @@
 <?php
-require_once(dirname(__FILE__) . '/../../../wp-blog-header.php');
+//require_once(dirname(__FILE__) . '/../../../wp-blog-header.php');
+require_once(dirname(__FILE__) . '/../../../../wpfiles/wp-blog-header.php');
 nocache_headers();
 /**
  * @file
@@ -34,7 +35,10 @@ if ($connection->http_code == 200) { // it was success
             foreach ($tweeturls as $tweeturl) {
                 $url = $tweeturl->url;
                 $expanded_url = $tweeturl->expanded_url;
-                getPostByURL($url, $expanded_url);
+                $post_id = getPostByURL($url, $expanded_url);
+                if ($post_id > 0) {
+                    // TODO: 
+                }
             }
         }
     }
@@ -44,7 +48,9 @@ if ($connection->http_code == 200) { // it was success
 }
 
 function getPostByURL($url, $expanded_url) {
-    echo $url, ' => ', $expanded_url;
+    // TODO: Really expand the url
+    return url_to_postid($epanded_url);
+    //echo $url, ' => ', $expanded_url;
 }
 
 //print_r($user_tweets);
