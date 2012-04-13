@@ -28,13 +28,18 @@ class TwitterProfileImage {
 
         //Get the location property of the response header. 
         $location = $headers["Location"];
-    print_r($headers);
 
         if (isset($location)) {
             if (is_array($location)) {
                 return $location[count($location) - 1];
+            } else {
+                return $location;
             }
+        } else {
+            // Something bad happened
+            // TODO: Handle this
         }
+
     }
 } // END static class TwitterProfileImage
 
