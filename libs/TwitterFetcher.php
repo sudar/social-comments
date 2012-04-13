@@ -6,8 +6,20 @@
  * @subpackage Twitter
  * @author Sudar
  */
-class TwitterFetcher {
+class TwitterFetcher extends Fetcher {
 
+    // Constants
+    // comment Types
+    const TWITTER_TWEETS = 'twitter_tweets';
+
+    // Post meta keys
+    const TWITTER_RETWEETS = 'twitter_retweets';
+    const TWEET_COMMENT_MAP = 'tweet_comment_map';
+
+    // comment Meta Keys
+    const COMMENT_AUTHOR_TWITTER = 'comment_author_twitter';
+
+    // oAuth values
     private $consumer_key; 
     private $consumer_secret; 
     private $oauth_token; 
@@ -23,35 +35,22 @@ class TwitterFetcher {
         
         /* Create a TwitterOauth object with consumer/user tokens. */
         $this->oAuthConnection = new TwitterOAuth($this->consumer_key, $this->consumer_secret, $this->oauth_token, $this->oauth_token_secret);
+
+        // TODO Check for ratelimit
     }
 
-    public function analyseUserTimeline()
-    {
+    /**
+     * Analyse the User Timeline
+     *
+     * @return void
+     * @author Sudar
+     */
+    public function analyseUserTimeline() {
         /* statuses/user_timeline */
-        $user_tweets = $this->oAuthConnection->get('statuses/user_timeline', array('include_entities' => 1));
+        $user_tweets = $this->oAuthConnection->get('statuses/user_timeline', array('include_entities' => 'true', 'include_rts' => 'true'));
+
         if ($this->oAuthConnection->http_code == 200) { // it was success
-            foreach($user_tweets as $tweet) {
-                $tweeturls = $tweet->entities->urls;
-
-                echo '<p>', $tweet->text;
-
-                if (count($tweeturls) > 0) {
-                    foreach ($tweeturls as $tweeturl) {
-                        $url = $tweeturl->url;
-                        $expanded_url = $tweeturl->expanded_url;
-                        $post_id = $this->getPostByURL($url, $expanded_url);
-                        if ($post_id > 0) {
-                            // TODO: Store the tweet as comment
-                            // TODO: Store the tweet id as custom field
-                            // TODO: Store the short url as permalink
-                            echo "<br>Found post: $post_id";
-                        }
-                    }
-                }
-
-                echo  "</p>\n";
-            }
-
+            $this->processTweets($user_tweets);
         } else {
             // TODO: Handle the error condition
             error_log("There was some problem in connection " + $this->oAuthConnection->http_code);
@@ -59,15 +58,166 @@ class TwitterFetcher {
 
     }
 
-    private function getPostByURL($url, $expanded_url) {
-        // TODO: Really expand the url
-        return url_to_postid($epanded_url);
-        //echo $url, ' => ', $expanded_url;
+    /**
+     * Process Tweets
+     *
+     * @return void
+     * @author Sudar
+     */
+    private function processTweets($tweets) {
+
+        foreach($tweets as $tweet) {
+            $post_id_url_map = array();
+            $tweeturls = $tweet->entities->urls;
+
+            // if there were any urls
+            if (count($tweeturls) > 0) {
+                foreach ($tweeturls as $tweeturl) {
+                    $url = $tweeturl->url;
+                    $expanded_url = $tweeturl->expanded_url;
+
+                    $post_id = $this->getPostByURL($expanded_url);
+
+                    if ($post_id > 0) {
+                        // push the post id
+                        $post_id_url_map[$post_id] = $url;
+                    }
+                }
+            }
+
+            // if there were posts
+            if (count($post_id_url_map) > 0) {
+                foreach($post_id_url_map as $unique_post_id => $short_url) {
+
+                    // Store the tweet as comment
+                    $comemntData = $this->createComment($tweet, $unique_post_id);
+                    $comment_id = $this->insertComment($comemntData);
+
+                    // Insert comment Meta information as well
+                    $this->storeTweetAuthorID($comment_id, $tweet->user->screen_name);
+                    
+                    // Store the tweet id as custom field
+                    $this->storeTweetAndCommentIDs($unique_post_id, $comment_id, $tweet->id_str);
+                }
+
+                // Store the short url as permalink
+                $this->updateShortUrls($post_id_url_map);
+
+                // Update Post Cache
+                $this->updatePostCache($post_id_url_map);
+
+            } 
+        }
     }
 
+    /**
+     * Create a new Comment Object
+     *
+     * @return array created comment Object
+     * @author Sudar
+     */
+    private function createComment($tweet, $post_id) {
+        $commentData = array();
+        
+        $commentData['comment_post_ID'] = $post_id;
+        $commentData['comment_author'] = $this->getTweetAuthor($tweet);
+        $commentData['comment_author_url'] = $this->getTweetAuthorUrl($tweet);
+        $commentData['comment_date'] = strtotime($tweet->created_at);
+        $commentData['comment_content'] = $this->getEmbeddableTweet($tweet->id_str);
+        $commentData['comment_type'] = $this->getCommentType($tweet);
 
-    private function checkRateLimit()
-    {
+        //TODO: Find out if we need to approve the comemnt or not
+        return $commentData;
+    }
+
+    /**
+     * get the oEmbed version of the Tweet
+     *
+     * @return <string> The oEmbed version of the Tweet
+     * @author Sudar
+     */
+    private function getEmbeddableTweet($tweet_id) {
+        // We are omitting the script. We need to include the widget.js file by other means
+        $richTweet = $this->oAuthConnection->get('statuses/oembed', array('id' => $tweet_id, 'align' => 'center', 'omit_script' => 'true'));
+
+        if ($this->oAuthConnection->http_code == 200) { // it was success
+            return $richTweet->html;
+        } else {
+        
+            // TODO: Handle the error condition
+            error_log("There was some problem in connection " + $this->oAuthConnection->http_code);
+        }
+    }
+
+    /**
+     * Structure the comment author field
+     *
+     * @return <string> the structured comemnt author field
+     * @author Sudar
+     */
+    private function getTweetAuthor($tweet) {
+        $author = $tweet->user->screen_name;
+        if ($tweet->user->name != '' && $tweet->user->name != $tweet->user->screen_name) {
+            $author .= ' (' . $tweet->user->name . ')';
+        }
+        return $author;
+    }
+
+    /**
+     * constructs the comment author url field
+     *
+     * @return <string> the constructed comemnt author url field
+     * @author Sudar
+     */
+    private function getTweetAuthorUrl($tweet) {
+        return 'http://twitter.com/' . $tweet->user->screen_name . '/statuses/' . $tweet->id_str;
+    }
+
+    /**
+     * Get the comment Type
+     *
+     * @return <string> Comment Type
+     * @author Sudar
+     */
+    private function getCommentType($tweet) {
+        if (property_exists($tweet, 'retweeted_status')) {
+            return self::TWITTER_RETWEETS;
+        } else {
+            return self::TWITTER_TWEETS;
+        }
+    }
+
+    /**
+     * Store the comment and tweet ids as part of the post
+     *
+     * @return void
+     * @author Sudar
+     */
+    private function storeTweetAndCommentIDs($post_id, $comment_id, $tweet_id) {
+        $tweet_comment_map = get_post_meta($post_id, self::TWEET_COMMENT_MAP, TRUE);
+
+        if (!is_array($tweet_comment_map)) {
+            $tweet_comment_map = array();
+            //add_post_meta($post_id, self::TWEET_COMMENT_MAP, $tweet_comment_map,  TRUE);
+        }
+
+        $tweet_comment_map[$tweet_id] = $comment_id;
+
+        update_post_meta($post_id, self::TWEET_COMMENT_MAP, $tweet_comment_map);
+        
+    }
+
+    /**
+     * Store the Tweet authors Twitter id
+     *
+     * @return void
+     * @author Sudar
+     */
+    private function storeTweetAuthorID($comemnt_id, $twitter_id) {
+        update_comment_meta($comemnt_id, self::COMMENT_AUTHOR_TWITTER, $twitter_id);
+    }
+
+    private function checkRateLimit() {
         /* If method is set change API call made. Test is called by default. */
         $content = $this->oAuthConnection->get('account/rate_limit_status');
         echo "Current API hits remaining: {$content->remaining_hits}.";

@@ -10,7 +10,9 @@ nocache_headers();
 /* Load required lib files. */
 session_start();
 
+require_once('libs/Utils.php');
 require_once('libs/twitteroauth/twitteroauth.php');
+require_once('libs/Fetcher.php');
 require_once('libs/TwitterFetcher.php');
 require_once('config.php');
 
@@ -19,6 +21,10 @@ $twitterFetcher = new TwitterFetcher(CONSUMER_KEY, CONSUMER_SECRET, $access_toke
 
 $twitterFetcher->analyseUserTimeline();
 
+//$twittercomments 	= get_post_meta(1811, "twittercomments",true);
+//print_r($twittercomments);
+//
+//echo url_to_postid('http://sudarmuthu.com/blog/bulk-delete-plugin-now-supports-deleting-by-permalink');
 //print_r($user_tweets);
 
 ///* statuses/mentions */
