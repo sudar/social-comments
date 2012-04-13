@@ -18,6 +18,7 @@ class TwitterFetcher extends Fetcher {
 
     // comment Meta Keys
     const COMMENT_AUTHOR_TWITTER = 'comment_author_twitter';
+    const COMMENT_AUTHOR_TWITTER_PROFILE = 'comment_author_twitter_profile';
 
     // oAuth values
     private $consumer_key; 
@@ -98,7 +99,7 @@ class TwitterFetcher extends Fetcher {
                     $comment_id = $this->insertComment($comemntData);
 
                     // Insert comment Meta information as well
-                    $this->storeTweetAuthorID($comment_id, $tweet->user->screen_name);
+                    $this->storeTweetAuthor($comment_id, $tweet->user->screen_name);
                     
                     // Store the tweet id as custom field
                     $this->storeTweetAndCommentIDs($unique_post_id, $comment_id, $tweet->id_str);
@@ -207,7 +208,7 @@ class TwitterFetcher extends Fetcher {
 
         $tweet_comment_map[$tweet_id] = $comment_id;
 
-        //update_post_meta($post_id, self::TWEET_COMMENT_MAP, $tweet_comment_map);
+        update_post_meta($post_id, self::TWEET_COMMENT_MAP, $tweet_comment_map);
         print_r($tweet_comment_map);        
 
     }
@@ -218,9 +219,13 @@ class TwitterFetcher extends Fetcher {
      * @return void
      * @author Sudar
      */
-    private function storeTweetAuthorID($comment_id, $twitter_id) {
-        //update_comment_meta($comment_id, self::COMMENT_AUTHOR_TWITTER, $twitter_id);
-        echo "Adding $twitter_id to $comment_id";
+    private function storeTweetAuthor($comment_id, $twitter_id) {
+        update_comment_meta($comment_id, self::COMMENT_AUTHOR_TWITTER, $twitter_id);
+
+        // TODO: Find the proper size that's needed
+        $profile_image = TwitterProfileImage::getProfileImage($twitter_id);
+        update_comment_meta($comment_id, self::COMMENT_AUTHOR_TWITTER_PROFILE, $profile_image);
+        echo "Adding $twitter_id and $profile_image to $comment_id";
     }
 
     /**
@@ -241,6 +246,4 @@ class TwitterFetcher extends Fetcher {
 
     }
 } // END class TwitterFetcher
-
-
 ?>

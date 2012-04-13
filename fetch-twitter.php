@@ -11,6 +11,7 @@ nocache_headers();
 session_start();
 
 require_once('libs/Utils.php');
+require_once('libs/TwitterProfileImage.php');
 require_once('libs/twitteroauth/twitteroauth.php');
 require_once('libs/Fetcher.php');
 require_once('libs/TwitterFetcher.php');

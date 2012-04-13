@@ -42,6 +42,4 @@ class TwitterProfileImage {
 
     }
 } // END static class TwitterProfileImage
-
-echo TwitterProfileImage::getProfileImage('sudarmuthu');
 ?>
