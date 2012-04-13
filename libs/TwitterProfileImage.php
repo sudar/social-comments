@@ -24,12 +24,16 @@ class TwitterProfileImage {
     static function getProfileImage($screenname, $size = 'bigger') {
         $url = self::API_URL . '?screen_name=' . $screenname . '&size=' . $size;
             
-        $response = wp_remote_request($url); 
+        $headers = get_headers($url, 1);
 
-        if (is_a($response, 'WP_Error')) {
-            return '';
-        } else {
-            return $response['body'];
+        //Get the location property of the response header. 
+        $location = $headers["Location"];
+    print_r($headers);
+
+        if (isset($location)) {
+            if (is_array($location)) {
+                return $location[count($location) - 1];
+            }
         }
     }
 } // END static class TwitterProfileImage
