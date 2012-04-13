@@ -27,7 +27,8 @@ class Fetcher {
      * Inserts the comment into the table
      */
     protected function insertComment($commentData) {
-        //print_r($commentData);
+        print_r($commentData);
+        return 0;
         return wp_insert_comment($commentData);
     }
 
@@ -50,7 +51,8 @@ class Fetcher {
             // Insert into post meta if it not preset already
             if (!array_search($short_url, $shorturls)) {
                 $shorturls[$short_url] = $short_url;
-                update_post_meta($post_id, self::SHORTURLS, $shorturls);
+                //update_post_meta($post_id, self::SHORTURLS, $shorturls);
+                print_r($shorturls);
             }
         }
     }

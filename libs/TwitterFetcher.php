@@ -207,8 +207,9 @@ class TwitterFetcher extends Fetcher {
 
         $tweet_comment_map[$tweet_id] = $comment_id;
 
-        update_post_meta($post_id, self::TWEET_COMMENT_MAP, $tweet_comment_map);
-        
+        //update_post_meta($post_id, self::TWEET_COMMENT_MAP, $tweet_comment_map);
+        print_r($tweet_comment_map);        
+
     }
 
     /**
@@ -217,8 +218,9 @@ class TwitterFetcher extends Fetcher {
      * @return void
      * @author Sudar
      */
-    private function storeTweetAuthorID($comemnt_id, $twitter_id) {
-        update_comment_meta($comemnt_id, self::COMMENT_AUTHOR_TWITTER, $twitter_id);
+    private function storeTweetAuthorID($comment_id, $twitter_id) {
+        //update_comment_meta($comment_id, self::COMMENT_AUTHOR_TWITTER, $twitter_id);
+        echo "Adding $twitter_id to $comment_id";
     }
 
     /**
