@@ -29,9 +29,9 @@ class TwitterFetcher extends Fetcher {
     private $oAuthConnection;
 
     public function __construct($consumer_key, $consumer_secret, $oauth_token, $oauth_token_secret) {
-        $this->consumer_key = $consumer_key;
-        $this->consumer_secret = $consumer_secret;
-        $this->oauth_token = $oauth_token;
+        $this->consumer_key       = $consumer_key;
+        $this->consumer_secret    = $consumer_secret;
+        $this->oauth_token        = $oauth_token;
         $this->oauth_token_secret = $oauth_token_secret;
         
         /* Create a TwitterOauth object with consumer/user tokens. */
@@ -96,7 +96,7 @@ class TwitterFetcher extends Fetcher {
 
                     // Store the tweet as comment
                     $comemntData = $this->createComment($tweet, $unique_post_id);
-                    $comment_id = $this->insertComment($comemntData);
+                    $comment_id  = $this->insertComment($comemntData);
 
                     // Insert comment Meta information as well
                     $this->storeTweetAuthor($comment_id, $tweet->user->screen_name);
@@ -124,12 +124,13 @@ class TwitterFetcher extends Fetcher {
     private function createComment($tweet, $post_id) {
         $commentData = array();
         
-        $commentData['comment_post_ID'] = $post_id;
-        $commentData['comment_author'] = $this->getTweetAuthor($tweet);
+        $commentData['comment_post_ID']    = $post_id;
+        $commentData['comment_author']     = $this->getTweetAuthor($tweet);
         $commentData['comment_author_url'] = $this->getTweetAuthorUrl($tweet);
-        $commentData['comment_date'] = strtotime($tweet->created_at);
-        $commentData['comment_content'] = $this->getEmbeddableTweet($tweet->id_str);
-        $commentData['comment_type'] = $this->getCommentType($tweet);
+        $commentData['comment_date_gmt']   = date('Y-m-d H:i:s', strtotime($tweet->created_at));
+        $commentData['comment_date']       = get_date_from_gmt($commentData['comment_date_gmt']);
+        $commentData['comment_content']    = $this->getEmbeddableTweet($tweet->id_str);
+        $commentData['comment_type']       = $this->getCommentType($tweet);
 
         //TODO: Find out if we need to approve the comemnt or not
         return $commentData;
