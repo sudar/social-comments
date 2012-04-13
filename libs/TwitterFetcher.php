@@ -37,6 +37,7 @@ class TwitterFetcher extends Fetcher {
         $this->oAuthConnection = new TwitterOAuth($this->consumer_key, $this->consumer_secret, $this->oauth_token, $this->oauth_token_secret);
 
         // TODO Check for ratelimit
+        // TODO Check if oAuth is fine
     }
 
     /**
@@ -79,8 +80,11 @@ class TwitterFetcher extends Fetcher {
                     $post_id = $this->getPostByURL($expanded_url);
 
                     if ($post_id > 0) {
-                        // push the post id
-                        $post_id_url_map[$post_id] = $url;
+                        // Check if this tweet was not inserted for this post before
+                        if (!$this->isTweetAlreadyInserted($post_id, $tweet->id_str)) {
+                            // push the post id
+                            $post_id_url_map[$post_id] = $url;
+                        }
                     }
                 }
             }
@@ -215,6 +219,17 @@ class TwitterFetcher extends Fetcher {
      */
     private function storeTweetAuthorID($comemnt_id, $twitter_id) {
         update_comment_meta($comemnt_id, self::COMMENT_AUTHOR_TWITTER, $twitter_id);
+    }
+
+    /**
+     * Finds if the tweet was already inserted for this post.
+     *
+     * @return <bool> TRUE if tweet was already inserted. FALSE if not
+     * @author Sudar
+     */
+    private function isTweetAlreadyInserted($post_id, $tweet_id) {
+        $tweet_comment_map = get_post_meta($post_id, self::TWEET_COMMENT_MAP, TRUE);
+        return array_key_exists($tweet_id, $tweet_comment_map);
     }
 
     private function checkRateLimit() {
