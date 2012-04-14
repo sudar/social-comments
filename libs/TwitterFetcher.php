@@ -96,6 +96,24 @@ class TwitterFetcher extends Fetcher {
     }
 
     /**
+     * Perform a Twitter API Search
+     *
+     * @return void
+     * @author Sudar
+     */
+    public function analyseSearchResults() {
+
+        // retrieve all posts which have twitter check enabled
+        // get shorturls for each post
+        // perform the search
+        $params = array('include_entities' => 'true', 'result_type' => 'recent', 'rpp' => 100);
+        $params['q'] = 'http://t.co/VcPAidJo';
+
+        $results = $this->oAuthConnection->http(SocialCommentsConstants::TWITTER_SEARCH_API_URL . '?' . OAuthUtil::build_http_query($params));
+        print_r(json_decode($results));
+    }
+
+    /**
      * Re Fetch Tweet text
      *
      * @return void
@@ -152,6 +170,7 @@ class TwitterFetcher extends Fetcher {
         $aboutme = $this->oAuthConnection->get('activity/about_me');
         print_r($aboutme);
     }
+
     /**
      * Process Tweets
      *

@@ -32,5 +32,8 @@ class SocialCommentsConstants {
 	//hooks
 	const SINGLE_PAGE_REFERER_HOOK = 'single_page_referer';
 
+	//urls
+	const TWITTER_SEARCH_API_URL = 'http://search.twitter.com/search.json';
+
 } // END class SocialCommentsConstants
 ?>
