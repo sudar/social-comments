@@ -43,29 +43,22 @@ class SocialComments {
         load_plugin_textdomain( 'social-comments', false, dirname(plugin_basename(__FILE__)) . '/languages' );
 
         // Register hooks
-        add_action( 'admin_menu', array(&$this, 'register_settings_page') );
-        add_action( 'admin_init', array(&$this, 'add_settings') );
+		add_action( 'single_page_referer', array(&$this, 'twitter_referer'), 10, 2 );
+		
+        //add_action( 'admin_menu', array(&$this, 'register_settings_page') );
+        //add_action( 'admin_init', array(&$this, 'add_settings') );
 
         /* Use the admin_menu action to define the custom boxes */
-        add_action('admin_menu', array(&$this, 'add_custom_box'));
+		//add_action('admin_menu', array(&$this, 'add_custom_box'));
 
         /* Use the save_post action to do something with the data entered */
-        add_action('save_post', array(&$this, 'save_postdata'));
-
-        // Enqueue the script
-        add_action('template_redirect', array(&$this, 'add_script'));
+		//add_action('save_post', array(&$this, 'save_postdata'));
 
         // Register filters
-        add_filter('the_content', array(&$this, 'append_retweet_button') , 99);
+        add_filter('the_content', array(&$this, 'check_referer'));
 
-        // register short code
-        add_shortcode('social-comments', array(&$this, 'shortcode_handler'));
-
-        $plugin = plugin_basename(__FILE__);
-        add_filter("plugin_action_links_$plugin", array(&$this, 'add_action_links'));
-
-        // for outputing js code
-        $this->deliver_js();
+        //$plugin = plugin_basename(__FILE__);
+        //add_filter("plugin_action_links_$plugin", array(&$this, 'add_action_links'));
     }
 
     /**
@@ -92,26 +85,6 @@ class SocialComments {
 
         if ($options['button-type'] == 'bit.ly') {
             wp_enqueue_script('retweet', get_option('home') . '/?retweetjs');
-        }
-    }
-
-    /**
-     * Deliver the js through PHP
-     * Thanks to Sivel http://sivel.net/ for this code
-     */
-    function deliver_js() {
-        if ( array_key_exists('retweetjs', $_GET) ) {
-            $options = get_option('retweet-style');
-
-            $options['username'] = ($options['username'] == "")? "retweetjs" : $options['username'];
-            $options['apikey'] = ($options['apikey'] == "") ? "R_6287c92ecaf9efc6f39e4f33bdbf80b1" : $options['apikey'];
-            $options['text'] = ($options['text'] == "")? "Retweet":$options['text'];
-
-            header('Content-Type: text/javascript');
-            print_retweet_js($options);
-            
-            // die after printing js
-            die();
         }
     }
 
@@ -398,81 +371,55 @@ class SocialComments {
         add_action( 'in_admin_footer', array(&$this, 'add_footer_links'));
     }
 
-    /**
-     * Append the retweet_button
-     * 
-     * @global object $post Current post
-     * @param string $content Post content
-     * @return string modifiyed content
-     */
-    function append_retweet_button($content) {
+	/**
+	 * Check the referer
+	 *
+	 * @return void
+	 * @author Sudar
+	 */
+	function check_referer($content) {
+		global $post;
 
-        global $post;
-        $options = get_option('retweet-style');
+		if (is_singular()) {
+			// it is a single post or page. Now check for referer
+			$referer_domain = $this->get_ref_domain(trim($_SERVER["HTTP_REFERER"]));
+			$post_id = $post->ID;
 
-        $enable_retweet = get_post_meta($post->ID, 'enable_retweet_button', true);
+			// do the action. We can hook into it by adding add_action();
+			do_action('single_page_referer', $post_id, $referer_domain);
+		}
+		return $content;
+	}
 
-        if ($enable_retweet != "") {
-            // if option per post/page is set
-            if ($enable_retweet == "1") {
-                // Retweet button is enabled
+	/**
+	 * Twitter Referer
+	 *
+	 * @return void
+	 * @author Sudar
+	 */
+	public function twitter_referer($post_id, $referer) {
+		error_log("Referrer: " . $referer);
+	}
 
-                $content = $this->build_retweet_button($content, $options['position']);
-
-            } elseif ($enable_retweet == "0") {
-                // Retweet button is disabled
-                // Do nothing
-            }
-
-        } else {
-            //Option per post/page is not set
-            if (is_single()
-                || ($options['display-page'] == "1" && is_page())
-                || ($options['display-archive'] == "1" && is_archive())
-                || ($options['display-home'] == "1" && is_home())) {
-
-                $content = $this->build_retweet_button($content, $options['position']);
-            }
-        }
-        return $content;
-    }
-
-    /**
-     * Helper function for append_retweet_button
-     *
-     * @param string $content The post content
-     * @param string $position Position of the button
-     * @return string Modifiyed content
-     */
-    function build_retweet_button($content, $position) {
-        $button = easy_retweet_button(false);
-
-        switch ($position) {
-            case "before":
-                $content = $button . $content;
-            break;
-            case "after":
-                $content = $content . $button;
-            break;
-            case "both":
-                $content = $button . $content . $button;
-            break;
-            case "manual":
-            break;
-            default:
-                $content = $content . $button;
-            break;
-        }
-        return $content;
-    }
-
-    /**
-     * Short code handler
-     * @param <type> $attr
-     * @param <type> $content 
-     */
-    function shortcode_handler($attr, $content) {
-        return easy_retweet_button(false);
+	/**
+	 * Get the referer domain. Copied from http://plugins.svn.wordpress.org/wp-greet-box/trunk/includes/wp-greet-box.class.php
+	 *
+	 * @return void
+	 * @author Sudar
+	 */
+	private function get_ref_domain($http_referrer, $strip_www=true) {
+      // Break out quickly so we don't waste CPU cycles on non referrals
+      if (!isset($http_referrer) || ($http_referrer == '')) return false;
+    
+      $referer_info = parse_url($http_referrer);
+      $referer = $referer_info['host'];
+    
+      if($strip_www && substr($referer, 0, 4) == 'www.') {
+        // Remove www. if necessary
+        $referer = substr($referer, 4);
+      }
+    
+      return $referer;
     }
 
     // PHP4 compatibility
@@ -484,249 +431,4 @@ class SocialComments {
 // Start this plugin once all other plugins are fully loaded
 add_action( 'init', 'SocialComments' ); function SocialComments() { global $SocialComments; $SocialComments = new SocialComments(); }
 
-/**
- * Template function to add the retweet button
- */
-function easy_retweet_button($display = true) {
-    global $wp_query;
-    $post = $wp_query->post;
-    $permalink = get_permalink($post->ID);
-    $custom_retweet_text = get_post_meta($post->ID, 'custom_retweet_text', true);
-
-    if ($custom_retweet_text == '') {
-        // if the custom text message is empty default to post title
-        $custom_retweet_text = get_the_title($post->ID);
-    }
-
-    $enable_retweet = get_post_meta($post->ID, 'enable_retweet_button', true);
-
-    $output = '';
-    
-    if ($enable_retweet == "" || $enable_retweet == "1") {
-        // if option per post/page is set or
-        // Retweet button is enabled
-
-        $options = get_option('retweet-style');
-
-        if ($options['button-type'] == 'bit.ly') {
-            //Bit.ly Button
-            $align = ($options['align'] == "vert")? "vert": "";
-
-            $output = "<a href='$permalink' class='retweet $align' startCount = '0'";
-
-            if ($options['linkattr'] != "") {
-                $output .= ' ' . $options['linkattr'] . ' ';
-            }
-
-            $output .= ">$custom_retweet_text</a>";
-        } else {
-            //Twitter button
-
-            $t_count  = $options['t-count'];
-            $account1 = $options['account1'];
-            $lang = $options['t-language'];
-            $style = $options['t-style'];
-
-            if ($lang != '' && $lang != 'en') {
-                $lang = "data-lang='$lang'";
-            }
-
-            $output = <<<EOD
-            <a href="http://twitter.com/share" class="twitter-share-button" data-count="$t_count" data-text="$custom_retweet_text" data-via="$account1" data-url="$permalink" $lang>Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
-EOD;
-
-            if ($style != '') {
-                $output = "<div style = '$style'>$output</div>";
-            }
-        }
-    }
-
-    if ($display) {
-        echo $output;
-    } else {
-        return $output;
-    }
-}
-
-/**
- * Print Retweet js
- * @param array $options Plugin options
- */
-function print_retweet_js($options) {
-?>
-/*
- * Social Comments Button
- * http://ejohn.org/blog/retweet/
- *   by John Resig (ejohn.org)
- *
- * Licensed under the MIT License:
- * http://www.opensource.org/licenses/mit-license.php
- */
-
-(function(){
-
-window.RetweetJS = {
-	// Your Bit.ly Username
-	bitly_user: "<?php echo $options['username'];?>",
-
-	// Your Bit.ly API Key
-	// Found here: http://bit.ly/account
-	bitly_key: "<?php echo $options['apikey']; ?>",
-
-	// The text to replace the links with
-	link_text: (/windows/i.test( navigator.userAgent) ? "&#9658;" : "&#9851;") +
-		"&nbsp;<?php echo $options['text'];?>",
-
-	// What # to show (Use "clicks" for # of clicks or "none" for nothing)
-	count_type: "clicks",
-
-	// Tweet Prefix text
-	// "RT @jeresig " would result in: "RT @jeresig Link Title http://bit.ly/asdf"
-	prefix: "<?php echo $options['prefix']; ?> ",
-
-	// Style information
-	styling: "a.retweet { font: 12px Helvetica,Arial; color: #000; text-decoration: none; border: 0px; }" +
-		"a.retweet span { color: #FFF; background: #94CC3D; margin-left: 2px; border: 1px solid #43A52A; -moz-border-radius: 3px; -webkit-border-radius: 3px; border-radius: 3px; padding: 3px; }" +
-		"a.vert { display: block; text-align: center; font-size: 16px; float: left; margin: 4px; }" +
-		"a.retweet strong.vert { display: block; margin-bottom: 4px; background: #F5F5F5; border: 1px solid #EEE; -moz-border-radius: 3px; -webkit-border-radius: 3px; border-radius: 3px; padding: 3px; }" +
-		"a.retweet span.vert { display: block; font-size: 12px; margin-left: 0px; }"
-};
-
-//////////////// No Need to Configure Below Here ////////////////
-
-var loadCount = 1;
-
-// Asynchronously load the Bit.ly JavaScript API
-// If it hasn't been loaded already
-if ( typeof BitlyClient === "undefined" ) {
-	var head = document.getElementsByTagName("head")[0] ||
-		document.documentElement;
-	var script = document.createElement("script");
-	script.src = "http://bit.ly/javascript-api.js?version=latest&login=" +
-		RetweetJS.bitly_user + "&apiKey=" + RetweetJS.bitly_key;
-	script.charSet = "utf-8";
-	head.appendChild( script );
-
-	var check = setInterval(function(){
-		if ( typeof BitlyCB !== "undefined" ) {
-			clearInterval( check );
-			head.removeChild( script );
-			loaded();
-		}
-	}, 10);
-
-	loadCount = 0;
-}
-
-if ( document.addEventListener ) {
-	document.addEventListener("DOMContentLoaded", loaded, false);
-
-} else if ( window.attachEvent ) {
-	window.attachEvent("onload", loaded);
-}
-
-function loaded(){
-	// Need to wait for doc ready and js ready
-	if ( ++loadCount < 2 ) {
-		return;
-	}
-
-	var elems = [], urlElem = {}, hashURL = {};
-
-	BitlyCB.shortenResponse = function(data) {
-		for ( var url in data.results ) {
-			var hash = data.results[url].userHash;
-			hashURL[hash] = url;
-
-			var elems = urlElem[ url ];
-
-			for ( var i = 0; i < elems.length; i++ ) {
-				elems[i].href += hash;
-			}
-
-			if ( RetweetJS.count_type === "clicks" ) {
-				BitlyClient.stats(hash, 'BitlyCB.statsResponse');
-			}
-		}
-	};
-
-	BitlyCB.statsResponse = function(data) {
-		var clicks = data.results.clicks, hash = data.results.userHash;
-		var url = hashURL[ hash ], elems = urlElem[ url ];
-
-		if ( clicks > 0 ) {
-			for ( var i = 0; i < elems.length; i++ ) {
-				var strong = document.createElement("strong");
-				strong.appendChild( document.createTextNode( clicks + parseInt(elems[i].attributes.startCount.value) + " " ) );
-				elems[i].insertBefore(strong, elems[i].firstChild);
-
-				if ( /(^|\s)vert(\s|$)/.test( elems[i].className ) ) {
-					elems[i].firstChild.className = elems[i].lastChild.className = "vert";
-				}
-			}
-		}
-
-		hashURL[ hash ] = urlElem[ url ] = null;
-	};
-
-	if ( document.getElementsByClassName ) {
-		elems = document.getElementsByClassName("retweet");
-	} else {
-		var tmp = document.getElementsByTagName("a");
-		for ( var i = 0; i < tmp.length; i++ ) {
-			if ( /(^|\s)retweet(\s|$)/.test( tmp[i].className ) ) {
-				elems.push( tmp[i] );
-			}
-		}
-	}
-
-	if ( elems.length && RetweetJS.styling ) {
-		var style = document.createElement("style");
-		style.type = "text/css";
-
-		try {
-			style.appendChild( document.createTextNode( RetweetJS.styling ) );
-		} catch (e) {
-			if ( style.styleSheet ) {
-				style.styleSheet.cssText = RetweetJS.styling;
-			}
-		}
-
-		document.body.appendChild( style );
-	}
-
-	for ( var i = 0; i < elems.length; i++ ) {
-		var elem = elems[i];
-
-		if ( /(^|\s)self(\s|$)/.test( elem.className ) ) {
-			elem.href = window.location;
-			elem.title = document.title;
-		}
-
-		var origText = elem.title || elem.textContent || elem.innerText,
-			href = elem.href;
-
-		elem.innerHTML = "<span>" + RetweetJS.link_text + "</span>";
-		elem.title = "";
-		elem.href = "http://twitter.com/intent/tweet?text=" +
-			encodeURIComponent(RetweetJS.prefix + origText + " http://<?php if ($options['domain'] != '') { echo $options['domain']; } else { echo 'bit.ly'; } ?>/");
-
-<?php
-    if ($options['domain'] != '') {
-        $domain = ", 'domain':'" . $options['domain'] . "'";
-    }
-?>
-		if ( urlElem[ href ] ) {
-			urlElem[ href ].push( elem );
-		} else {
-			urlElem[ href ] = [ elem ];
-			BitlyClient.call('shorten', {'longUrl':href, 'history':'1' <?php echo $domain;?>}, 'BitlyCB.shortenResponse');
-		}
-	}
-
-}
-
-})();
-<?php
-}
 ?>
