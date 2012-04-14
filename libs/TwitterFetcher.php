@@ -102,6 +102,7 @@ class TwitterFetcher extends Fetcher {
      * @author Sudar
      */
     public function analyseSearchResults() {
+        global $wpdb;
 
         // retrieve all posts which have twitter check enabled
         $query = "SELECT wposts.ID FROM $wpdb->posts wposts, $wpdb->postmeta wpostmeta
