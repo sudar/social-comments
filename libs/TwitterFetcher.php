@@ -72,18 +72,19 @@ class TwitterFetcher extends Fetcher {
      * @author Sudar
      */
     public function repopulateAllTweetText() {
-
         global $wpdb;
 
         // find all posts that have tweets
-        $query = "SELECT wposts.post_id FROM $wpdb->posts wposts, $wpdb->postmeta wpostmeta
+        $query = "SELECT wposts.ID FROM $wpdb->posts wposts, $wpdb->postmeta wpostmeta
             WHERE wposts.ID = wpostmeta.post_id AND wpostmeta.meta_key = %s AND wposts.post_status = 'publish'
             ORDER BY wposts.post_date DESC";
 
         $posts_with_tweets = $wpdb->get_col($wpdb->prepare($query, self::TWEET_COMMENT_MAP));
 
+        // for each post, repopulate the tweets
         if ($posts_with_tweets) {
             foreach($posts_with_tweets as $post_id) {
+                echo "Currently processing post: $post_id";
                 $this->repopulateTweetText($post_id);
             }
         }
