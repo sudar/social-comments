@@ -113,7 +113,7 @@ class TwitterFetcher extends Fetcher {
 
         // for each post, repopulate the tweets
         if ($twitter_refered_posts) {
-            foreach($posts_with_tweets as $post_id) {
+            foreach($twitter_refered_posts as $post_id) {
                 // TODO: get shorturls for each post
                 $permalink = get_permalink($post_id);
                 
