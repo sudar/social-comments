@@ -28,6 +28,12 @@ class TwitterFetcher extends Fetcher {
         
     private $oAuthConnection;
 
+    /**
+     * Constructor. Get's the oAuth values and asigns them
+     *
+     * @return void
+     * @author Sudar
+     */
     public function __construct($consumer_key, $consumer_secret, $oauth_token, $oauth_token_secret) {
         $this->consumer_key       = $consumer_key;
         $this->consumer_secret    = $consumer_secret;
@@ -57,9 +63,57 @@ class TwitterFetcher extends Fetcher {
             // TODO: Handle the error condition
             error_log("There was some problem in connection " + $this->oAuthConnection->http_code);
         }
-
     }
 
+    /**
+     * Re Fetch Tweet text
+     *
+     * @return void
+     * @author Sudar
+     */
+    public function repopulateAllTweetText() {
+
+        global $wpdb;
+
+        // find all posts that have tweets
+        $query = "SELECT wposts.post_id FROM $wpdb->posts wposts, $wpdb->postmeta wpostmeta
+            WHERE wposts.ID = wpostmeta.post_id AND wpostmeta.meta_key = %s AND wposts.post_status = 'publish'
+            ORDER BY wposts.post_date DESC";
+
+        $posts_with_tweets = $wpdb->get_col($wpdb->prepare($query, self::TWEET_COMMENT_MAP));
+
+        if ($posts_with_tweets) {
+            foreach($posts_with_tweets as $post_id) {
+                $this->repopulateTweetText($post_id);
+            }
+        }
+    }
+
+    /**
+     * Re fetch Tweet Text for a particular post
+     *
+     * @return void
+     * @author Sudar
+     */
+    public function repopulateTweetText($post_id) {
+        // Get the tweet comment map
+        $tweet_comment_map = get_post_meta($post_id, self::TWEET_COMMENT_MAP, TRUE);
+
+        if (is_array($tweet_comment_map)) {
+            foreach($tweet_comment_map as $tweet_id => $comment_id) {
+                // Fetch text for each comment
+                $commentData = get_comment($comment_id, ARRAY_A);
+                $commentData['comment_content'] = $this->getEmbeddableTweet($tweet_id);
+
+                // update the comment
+                $this->updateComment($commentData);
+            } 
+
+            // clean comment cache
+            clean_comment_cache(array_values($tweet_comment_map));
+        }
+    }
+    
     /**
      * Process Tweets
      *
@@ -142,9 +196,9 @@ class TwitterFetcher extends Fetcher {
      * @return <string> The oEmbed version of the Tweet
      * @author Sudar
      */
-    private function getEmbeddableTweet($tweet_id) {
+    private function getEmbeddableTweet($tweet_id, $align = "left", $hide_thread = 'false') {
         // We are omitting the script. We need to include the widget.js file by other means
-        $richTweet = $this->oAuthConnection->get('statuses/oembed', array('id' => $tweet_id, 'align' => 'center', 'omit_script' => 'true'));
+        $richTweet = $this->oAuthConnection->get('statuses/oembed', array('id' => $tweet_id, 'align' => $align, 'hide_thread' => $hide_thread, 'omit_script' => 'true'));
 
         if ($this->oAuthConnection->http_code == 200) { // it was success
             return $richTweet->html;

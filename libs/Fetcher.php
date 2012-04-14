@@ -32,6 +32,17 @@ class Fetcher {
     }
 
     /**
+     * Update the comment
+     *
+     * @return void
+     * @author Sudar
+     */
+    protected function updateComment($commentData) {
+        print_r($commentData);
+        return wp_update_comment($commentData);
+    }
+
+    /**
      * Update the shorturls field for the post
      *
      * @return void
