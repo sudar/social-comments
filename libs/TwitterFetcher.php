@@ -104,13 +104,29 @@ class TwitterFetcher extends Fetcher {
     public function analyseSearchResults() {
 
         // retrieve all posts which have twitter check enabled
-        // get shorturls for each post
-        // perform the search
-        $params = array('include_entities' => 'true', 'result_type' => 'recent', 'rpp' => 100);
-        $params['q'] = 'http://t.co/VcPAidJo';
+        $query = "SELECT wposts.ID FROM $wpdb->posts wposts, $wpdb->postmeta wpostmeta
+            WHERE wposts.ID = wpostmeta.post_id AND wpostmeta.meta_key = %s AND wpostmeta.meta_value = %s AND wposts.post_status = 'publish'
+            ORDER BY wposts.post_date DESC";
 
-        $results = $this->oAuthConnection->http(SocialCommentsConstants::TWITTER_SEARCH_API_URL . '?' . OAuthUtil::build_http_query($params));
-        print_r(json_decode($results));
+        $twitter_refered_posts = $wpdb->get_col($wpdb->prepare($query, SocialCommentsConstants::PM_REFERED_BY_TWITTER, '1'));
+
+        // for each post, repopulate the tweets
+        if ($twitter_refered_posts) {
+            foreach($posts_with_tweets as $post_id) {
+                // TODO: get shorturls for each post
+                $permalink = get_permalink($post_id);
+                
+                // perform the search
+                $response = $this->performSearch($permalink);
+                $results = $response->results;
+
+                $this->processTweets($results);
+                //TODO: Update last seen tweet
+
+                // revert the referal status
+                update_post_meta($post_id, SocialCommentsConstants::PM_REFERED_BY_TWITTER, '0');
+            }
+        }
     }
 
     /**
@@ -206,11 +222,11 @@ class TwitterFetcher extends Fetcher {
                 foreach($post_id_url_map as $unique_post_id => $short_url) {
 
                     // Store the tweet as comment
-                    $comemntData = $this->createComment($tweet, $unique_post_id);
-                    $comment_id  = $this->insertComment($comemntData);
+                    $comment_data = $this->createComment($tweet, $unique_post_id);
+                    $comment_id   = $this->insertComment($comment_data);
 
                     // Insert comment Meta information as well
-                    $this->storeTweetAuthor($comment_id, $tweet->user->screen_name);
+                    $this->storeTweetAuthor($comment_id, $this->getTweetAuthorScreenName($tweet));
                     
                     // Store the tweet id as custom field
                     $this->storeTweetAndCommentIDs($unique_post_id, $comment_id, $tweet->id_str);
@@ -273,10 +289,15 @@ class TwitterFetcher extends Fetcher {
      * @author Sudar
      */
     private function getTweetAuthor($tweet) {
-        $author = $tweet->user->screen_name;
-        if ($tweet->user->name != '' && $tweet->user->name != $tweet->user->screen_name) {
-            $author .= ' (' . $tweet->user->name . ')';
+        $screen_name = $this->getTweetAuthorScreenName($tweet);
+        $name = $this->getTweetAuthorName($tweet);
+
+        $author = $screen_name;
+
+        if ($name != '' && $name != $screen_name) {
+            $author .= ' (' . $name . ')';
         }
+
         return $author;
     }
 
@@ -287,7 +308,40 @@ class TwitterFetcher extends Fetcher {
      * @author Sudar
      */
     private function getTweetAuthorUrl($tweet) {
-        return 'http://twitter.com/' . $tweet->user->screen_name . '/statuses/' . $tweet->id_str;
+        return 'http://twitter.com/' . $this->getTweetAuthorScreenName($tweet) . '/statuses/' . $tweet->id_str;
+    }
+
+    /**
+     * Get Tweet Author Screenname from tweet
+     *
+     * @return <string> Tweet author screenname
+     * @author Sudar
+     */
+    private function getTweetAuthorScreenName($tweet) {
+        if (property_exists($tweet, 'user')) {
+            // usertimeline or mentions
+            return $tweet->user->screen_name;
+        } else {
+            // search results
+            return $tweet->from_user;
+        }
+    }
+
+    /**
+     * Get Tweet Author Name from tweet
+     *
+     * @return <string> Tweet author screenname
+     * @author Sudar
+     */
+    private function getTweetAuthorName($tweet) {
+        if (property_exists($tweet, 'user')) {
+            // usertimeline or mentions
+            return $tweet->user->name;
+        } else {
+            // search results
+            return $tweet->from_user_name;
+        }
+
     }
 
     /**
@@ -351,6 +405,21 @@ class TwitterFetcher extends Fetcher {
         } else {
             return FALSE;
         }
+    }
+
+    /**
+     * Perform Search for a query and return resutls
+     *
+     * @return <object> Search Results
+     * @author Sudar
+     */
+    private function performSearch($query) {
+        // TODO: Perform somekind of limit
+        $params = array('include_entities' => 'true', 'result_type' => 'recent', 'rpp' => 100);
+        $params['q'] = $query;
+
+        $response = $this->oAuthConnection->http(SocialCommentsConstants::TWITTER_SEARCH_API_URL . '?' . OAuthUtil::build_http_query($params), 'GET');
+        return json_decode($response);
     }
 
     private function checkRateLimit() {

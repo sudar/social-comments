@@ -30,7 +30,7 @@ Text Domain: social-comments
 */
 
 // Include constants file
-require_once dirname(plugin_basename(__FILE__)) . '/libs/SocialCommentsConstants.php';
+require_once dirname(__FILE__) . '/libs/SocialCommentsConstants.php';
 
 /**
  * Social Comments Plugin Class
@@ -395,7 +395,7 @@ class SocialComments {
 	public function twitter_referer($post_id, $referer) {
 		if (stripos($referer, 't.co') !== FALSE || stripos($referer, 'twitter.com') !== FALSE) {
 			// It was refered by Twitter, so update the custom post field
-			update_post_meta($post_id, 'refered_by_twitter', '1');
+			update_post_meta($post_id, SocialCommentsConstants::PM_REFERED_BY_TWITTER, '1');
 		}
 	}
 

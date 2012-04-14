@@ -16,6 +16,7 @@ class SocialCommentsConstants {
     // Post meta keys
     const TWITTER_RETWEETS = 'twitter_retweets';
     const TWEET_COMMENT_MAP = 'tweet_comment_map';
+	const PM_REFERED_BY_TWITTER = 'refered_by_twitter';
 
     // comment Meta Keys
     const COMMENT_AUTHOR_TWITTER = 'comment_author_twitter';
