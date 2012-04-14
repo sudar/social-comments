@@ -56,7 +56,7 @@ class TwitterFetcher extends Fetcher {
     public function analyseUserTimeline() {
         /* statuses/user_timeline */
         //TODO: Need to handle since_id
-        $user_tweets = $this->oAuthConnection->get('statuses/user_timeline', array('include_entities' => 'true', 'include_rts' => 'true'));
+        $user_tweets = $this->oAuthConnection->get('statuses/user_timeline', array('include_entities' => 'true', 'include_rts' => 'true', 'count' => 200));
 
         if ($this->oAuthConnection->http_code == 200) { // it was success
             $this->processTweets($user_tweets);
@@ -69,7 +69,7 @@ class TwitterFetcher extends Fetcher {
     public function analyseUserMentions() {
         /* statuses/mentions*/
         //TODO: Need to handle since_id
-        $user_tweets = $this->oAuthConnection->get('statuses/mentions', array('include_entities' => 'true', 'include_rts' => 'true'));
+        $user_tweets = $this->oAuthConnection->get('statuses/mentions', array('include_entities' => 'true', 'include_rts' => 'true', 'count' => 200));
 
         if ($this->oAuthConnection->http_code == 200) { // it was success
             $this->processTweets($user_tweets);
