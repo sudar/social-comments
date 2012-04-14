@@ -21,7 +21,8 @@ require_once('config.php');
 $twitterFetcher = new TwitterFetcher(CONSUMER_KEY, CONSUMER_SECRET, $access_token['oauth_token'], $access_token['oauth_token_secret']);
 
 //$twitterFetcher->analyseUserTimeline();
-$twitterFetcher->repopulateAllTweetText();
+$twitterFetcher->analyseUserMentions();
+//$twitterFetcher->repopulateAllTweetText();
 
 //$twittercomments 	= get_post_meta(1811, "twittercomments",true);
 //print_r($twittercomments);

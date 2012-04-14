@@ -55,7 +55,21 @@ class TwitterFetcher extends Fetcher {
      */
     public function analyseUserTimeline() {
         /* statuses/user_timeline */
+        //TODO: Need to handle since_id
         $user_tweets = $this->oAuthConnection->get('statuses/user_timeline', array('include_entities' => 'true', 'include_rts' => 'true'));
+
+        if ($this->oAuthConnection->http_code == 200) { // it was success
+            $this->processTweets($user_tweets);
+        } else {
+            // TODO: Handle the error condition
+            error_log("There was some problem in connection " + $this->oAuthConnection->http_code);
+        }
+    }
+
+    public function analyseUserMentions() {
+        /* statuses/mentions*/
+        //TODO: Need to handle since_id
+        $user_tweets = $this->oAuthConnection->get('statuses/mentions', array('include_entities' => 'true', 'include_rts' => 'true'));
 
         if ($this->oAuthConnection->http_code == 200) { // it was success
             $this->processTweets($user_tweets);
