@@ -73,9 +73,8 @@ class TwitterFetcher extends Fetcher {
 
         if ($this->oAuthConnection->http_code == 200) { // it was success
             if (count($user_tweets) > 0) {
-                //$this->processTweets($user_tweets);
+                $this->processTweets($user_tweets);
                 update_option(self::LAST_USERTIMELINE_TWEET, $user_tweets[0]->id_str);
-                echo "Updated last: " . $user_tweets[0]->id_str;
             }
         } else {
             // TODO: Handle the error condition
@@ -104,9 +103,8 @@ class TwitterFetcher extends Fetcher {
 
         if ($this->oAuthConnection->http_code == 200) { // it was success
             if (count($mention_tweets) > 0) {
-                //$this->processTweets($mention_tweets);
+                $this->processTweets($mention_tweets);
                 update_option(self::LAST_MENTION_TWEET, $mention_tweets[0]->id_str);
-                echo "Updated last: " . $mention_tweets[0]->id_str;
             }
         } else {
             // TODO: Handle the error condition
@@ -337,7 +335,6 @@ class TwitterFetcher extends Fetcher {
         // TODO: Find the proper size that's needed
         $profile_image = TwitterProfileImage::getProfileImage($twitter_id);
         update_comment_meta($comment_id, self::COMMENT_AUTHOR_TWITTER_PROFILE, $profile_image);
-        echo "Adding $twitter_id and $profile_image to $comment_id";
     }
 
     /**
@@ -359,7 +356,6 @@ class TwitterFetcher extends Fetcher {
         /* If method is set change API call made. Test is called by default. */
         $content = $this->oAuthConnection->get('account/rate_limit_status');
         echo "Current API hits remaining: {$content->remaining_hits}.";
-
     }
 } // END class TwitterFetcher
 ?>

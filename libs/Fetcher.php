@@ -58,14 +58,12 @@ class Fetcher {
 
             if (!is_array($shorturls)) {
                 $shorturls = array();		
-                //add_post_meta($post_id, self::SHORTURLS, $shorturls, TRUE);	
             }
 
             // Insert into post meta if it not preset already
             if (!array_search($short_url, $shorturls)) {
                 $shorturls[$short_url] = $short_url;
                 update_post_meta($post_id, self::SHORTURLS, $shorturls);
-                print_r($shorturls);
             }
         }
     }
