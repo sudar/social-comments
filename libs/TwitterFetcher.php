@@ -127,6 +127,16 @@ class TwitterFetcher extends Fetcher {
     }
     
     /**
+     * Using the undocumented activity/aboutme
+     *
+     * @return void
+     * @author Sudar
+     */
+    public function analyseAboutMe() {
+        $aboutme = $this->oAuthConnection->get('activity/about_me');
+        print_r($aboutme);
+    }
+    /**
      * Process Tweets
      *
      * @return void
