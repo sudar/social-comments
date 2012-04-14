@@ -59,11 +59,16 @@ class TwitterFetcher extends Fetcher {
      * @author Sudar
      */
     public function analyseUserTimeline() {
-        /* statuses/user_timeline */
         // get last tweet id
         $last_tweet_id = get_option(self::LAST_USERTIMELINE_TWEET, 0);
-        $user_tweets = $this->oAuthConnection->get('statuses/user_timeline', 
-                    array('include_entities' => 'true', 'include_rts' => 'true', 'count' => 200 , 'since_id' => $last_tweet_id));
+
+        // build the options array
+        $options = array('include_entities' => 'true', 'include_rts' => 'true', 'count' => 200 );
+        if ($last_tweet_id > 0) {
+            $options['since_id'] = $last_tweet_id;
+        } 
+
+        $user_tweets = $this->oAuthConnection->get('statuses/user_timeline', $options);
 
         if ($this->oAuthConnection->http_code == 200) { // it was success
             //$this->processTweets($user_tweets);
@@ -82,11 +87,16 @@ class TwitterFetcher extends Fetcher {
      * @author Sudar
      */
     public function analyseUserMentions() {
-        /* statuses/mentions*/
         // get last tweet id
         $last_tweet_id = get_option(self::LAST_MENTION_TWEET, 0);
-        $mention_tweets = $this->oAuthConnection->get('statuses/mentions', 
-                    array('include_entities' => 'true', 'include_rts' => 'true', 'count' => 200 , 'since_id' => $last_tweet_id));
+
+        // build the options array
+        $options = array('include_entities' => 'true', 'include_rts' => 'true', 'count' => 200 );
+        if ($last_tweet_id > 0) {
+            $options['since_id'] = $last_tweet_id;
+        } 
+
+        $mention_tweets = $this->oAuthConnection->get('statuses/mentions', $options);
 
         if ($this->oAuthConnection->http_code == 200) { // it was success
             //$this->processTweets($mention_tweets);
