@@ -20,6 +20,11 @@ class TwitterFetcher extends Fetcher {
     const COMMENT_AUTHOR_TWITTER = 'comment_author_twitter';
     const COMMENT_AUTHOR_TWITTER_PROFILE = 'comment_author_twitter_profile';
 
+    // options
+    const LAST_USERTIMELINE_TWEET = 'last_usertimeline_tweet';
+    const LAST_MENTION_TWEET = 'last_mention_tweet';
+    const LAST_SEARCH_TWEET = 'last_search_tweet';
+
     // oAuth values
     private $consumer_key; 
     private $consumer_secret; 
@@ -55,24 +60,38 @@ class TwitterFetcher extends Fetcher {
      */
     public function analyseUserTimeline() {
         /* statuses/user_timeline */
-        //TODO: Need to handle since_id
-        $user_tweets = $this->oAuthConnection->get('statuses/user_timeline', array('include_entities' => 'true', 'include_rts' => 'true', 'count' => 200));
+        // get last tweet id
+        $last_tweet_id = get_option(self::LAST_USERTIMELINE_TWEET, 0);
+        $user_tweets = $this->oAuthConnection->get('statuses/user_timeline', 
+                    array('include_entities' => 'true', 'include_rts' => 'true', 'count' => 200 , 'since_id' => $last_tweet_id));
 
         if ($this->oAuthConnection->http_code == 200) { // it was success
-            $this->processTweets($user_tweets);
+            //$this->processTweets($user_tweets);
+            update_option(self::LAST_USERTIMELINE_TWEET, $user_tweets[0]->id_str);
+            echo "Updated last: " . $user_tweets[0]->id_str;
         } else {
             // TODO: Handle the error condition
             error_log("There was some problem in connection " + $this->oAuthConnection->http_code);
         }
     }
 
+    /**
+     * Analyse User Mentions
+     *
+     * @return void
+     * @author Sudar
+     */
     public function analyseUserMentions() {
         /* statuses/mentions*/
-        //TODO: Need to handle since_id
-        $user_tweets = $this->oAuthConnection->get('statuses/mentions', array('include_entities' => 'true', 'include_rts' => 'true', 'count' => 200));
+        // get last tweet id
+        $last_tweet_id = get_option(self::LAST_MENTION_TWEET, 0);
+        $mention_tweets = $this->oAuthConnection->get('statuses/mentions', 
+                    array('include_entities' => 'true', 'include_rts' => 'true', 'count' => 200 , 'since_id' => $last_tweet_id));
 
         if ($this->oAuthConnection->http_code == 200) { // it was success
-            $this->processTweets($user_tweets);
+            //$this->processTweets($mention_tweets);
+            update_option(self::LAST_MENTION_TWEET, $mention_tweets[0]->id_str);
+            echo "Updated last: " . $mention_tweets[0]->id_str;
         } else {
             // TODO: Handle the error condition
             error_log("There was some problem in connection " + $this->oAuthConnection->http_code);
