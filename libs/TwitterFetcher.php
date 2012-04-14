@@ -68,12 +68,15 @@ class TwitterFetcher extends Fetcher {
             $options['since_id'] = $last_tweet_id;
         } 
 
+        // Retrieve the tweets
         $user_tweets = $this->oAuthConnection->get('statuses/user_timeline', $options);
 
         if ($this->oAuthConnection->http_code == 200) { // it was success
-            //$this->processTweets($user_tweets);
-            update_option(self::LAST_USERTIMELINE_TWEET, $user_tweets[0]->id_str);
-            echo "Updated last: " . $user_tweets[0]->id_str;
+            if (count($user_tweets) > 0) {
+                //$this->processTweets($user_tweets);
+                update_option(self::LAST_USERTIMELINE_TWEET, $user_tweets[0]->id_str);
+                echo "Updated last: " . $user_tweets[0]->id_str;
+            }
         } else {
             // TODO: Handle the error condition
             error_log("There was some problem in connection " + $this->oAuthConnection->http_code);
@@ -96,12 +99,15 @@ class TwitterFetcher extends Fetcher {
             $options['since_id'] = $last_tweet_id;
         } 
 
+        // Retrieve the tweets
         $mention_tweets = $this->oAuthConnection->get('statuses/mentions', $options);
 
         if ($this->oAuthConnection->http_code == 200) { // it was success
-            //$this->processTweets($mention_tweets);
-            update_option(self::LAST_MENTION_TWEET, $mention_tweets[0]->id_str);
-            echo "Updated last: " . $mention_tweets[0]->id_str;
+            if (count($mention_tweets) > 0) {
+                //$this->processTweets($mention_tweets);
+                update_option(self::LAST_MENTION_TWEET, $mention_tweets[0]->id_str);
+                echo "Updated last: " . $mention_tweets[0]->id_str;
+            }
         } else {
             // TODO: Handle the error condition
             error_log("There was some problem in connection " + $this->oAuthConnection->http_code);
