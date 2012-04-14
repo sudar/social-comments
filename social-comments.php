@@ -29,6 +29,9 @@ Text Domain: social-comments
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+// Include constants file
+require_once dirname(plugin_basename(__FILE__)) . '/libs/SocialCommentsConstants.php';
+
 /**
  * Social Comments Plugin Class
  */
@@ -40,10 +43,10 @@ class SocialComments {
     function __construct() {
 
         // Load localization domain
-        load_plugin_textdomain( 'social-comments', false, dirname(plugin_basename(__FILE__)) . '/languages' );
+        load_plugin_textdomain( 'social-comments', FALSE, dirname(plugin_basename(__FILE__)) . '/languages' );
 
         // Register hooks
-		add_action( 'single_page_referer', array(&$this, 'twitter_referer'), 10, 2 );
+		add_action( SocialCommentsConstants::SINGLE_PAGE_REFERER_HOOK, array(&$this, 'twitter_referer'), 10, 2 );
 		
         //add_action( 'admin_menu', array(&$this, 'register_settings_page') );
         //add_action( 'admin_init', array(&$this, 'add_settings') );
@@ -66,14 +69,6 @@ class SocialComments {
      */
     function register_settings_page() {
         add_options_page( __('Social Comments', 'social-comments'), __('Social Comments', 'social-comments'), 8, 'social-comments', array(&$this, 'settings_page') );
-    }
-
-    /**
-     * add options
-     */
-    function add_settings() {
-        // Register options
-        register_setting( 'social-comments', 'retweet-style');
     }
 
     /**
@@ -386,7 +381,7 @@ class SocialComments {
 			$post_id = $post->ID;
 
 			// do the action. We can hook into it by adding add_action();
-			do_action('single_page_referer', $post_id, $referer_domain);
+			do_action(SocialCommentsConstants::SINGLE_PAGE_REFERER_HOOK, $post_id, $referer_domain);
 		}
 		return $content;
 	}
@@ -398,7 +393,10 @@ class SocialComments {
 	 * @author Sudar
 	 */
 	public function twitter_referer($post_id, $referer) {
-		error_log("Referrer: " . $referer);
+		if (stripos($referer, 't.co') !== FALSE || stripos($referer, 'twitter.com') !== FALSE) {
+			// It was refered by Twitter, so update the custom post field
+			update_post_meta($post_id, 'refered_by_twitter', '1');
+		}
 	}
 
 	/**
@@ -408,18 +406,18 @@ class SocialComments {
 	 * @author Sudar
 	 */
 	private function get_ref_domain($http_referrer, $strip_www=true) {
-      // Break out quickly so we don't waste CPU cycles on non referrals
-      if (!isset($http_referrer) || ($http_referrer == '')) return false;
-    
-      $referer_info = parse_url($http_referrer);
-      $referer = $referer_info['host'];
-    
-      if($strip_www && substr($referer, 0, 4) == 'www.') {
-        // Remove www. if necessary
-        $referer = substr($referer, 4);
-      }
-    
-      return $referer;
+		// Break out quickly so we don't waste CPU cycles on non referrals
+		if (!isset($http_referrer) || ($http_referrer == '')) return false;
+
+		$referer_info = parse_url($http_referrer);
+		$referer = $referer_info['host'];
+
+		if($strip_www && substr($referer, 0, 4) == 'www.') {
+			// Remove www. if necessary
+			$referer = substr($referer, 4);
+		}
+
+		return $referer;
     }
 
     // PHP4 compatibility

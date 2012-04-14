@@ -8,23 +8,6 @@
  */
 class TwitterFetcher extends Fetcher {
 
-    // Constants
-    // comment Types
-    const TWITTER_TWEETS = 'twitter_tweets';
-
-    // Post meta keys
-    const TWITTER_RETWEETS = 'twitter_retweets';
-    const TWEET_COMMENT_MAP = 'tweet_comment_map';
-
-    // comment Meta Keys
-    const COMMENT_AUTHOR_TWITTER = 'comment_author_twitter';
-    const COMMENT_AUTHOR_TWITTER_PROFILE = 'comment_author_twitter_profile';
-
-    // options
-    const LAST_USERTIMELINE_TWEET = 'last_usertimeline_tweet';
-    const LAST_MENTION_TWEET = 'last_mention_tweet';
-    const LAST_SEARCH_TWEET = 'last_search_tweet';
-
     // oAuth values
     private $consumer_key; 
     private $consumer_secret; 
@@ -60,7 +43,7 @@ class TwitterFetcher extends Fetcher {
      */
     public function analyseUserTimeline() {
         // get last tweet id
-        $last_tweet_id = get_option(self::LAST_USERTIMELINE_TWEET, 0);
+        $last_tweet_id = get_option(SocialCommentsConstants::LAST_USERTIMELINE_TWEET, 0);
 
         // build the options array
         $options = array('include_entities' => 'true', 'include_rts' => 'true', 'count' => 200 );
@@ -74,7 +57,7 @@ class TwitterFetcher extends Fetcher {
         if ($this->oAuthConnection->http_code == 200) { // it was success
             if (count($user_tweets) > 0) {
                 $this->processTweets($user_tweets);
-                update_option(self::LAST_USERTIMELINE_TWEET, $user_tweets[0]->id_str);
+                update_option(SocialCommentsConstants::LAST_USERTIMELINE_TWEET, $user_tweets[0]->id_str);
             }
         } else {
             // TODO: Handle the error condition
@@ -90,7 +73,7 @@ class TwitterFetcher extends Fetcher {
      */
     public function analyseUserMentions() {
         // get last tweet id
-        $last_tweet_id = get_option(self::LAST_MENTION_TWEET, 0);
+        $last_tweet_id = get_option(SocialCommentsConstants::LAST_MENTION_TWEET, 0);
 
         // build the options array
         $options = array('include_entities' => 'true', 'include_rts' => 'true', 'count' => 200 );
@@ -104,7 +87,7 @@ class TwitterFetcher extends Fetcher {
         if ($this->oAuthConnection->http_code == 200) { // it was success
             if (count($mention_tweets) > 0) {
                 $this->processTweets($mention_tweets);
-                update_option(self::LAST_MENTION_TWEET, $mention_tweets[0]->id_str);
+                update_option(SocialCommentsConstants::LAST_MENTION_TWEET, $mention_tweets[0]->id_str);
             }
         } else {
             // TODO: Handle the error condition
@@ -126,7 +109,7 @@ class TwitterFetcher extends Fetcher {
             WHERE wposts.ID = wpostmeta.post_id AND wpostmeta.meta_key = %s AND wposts.post_status = 'publish'
             ORDER BY wposts.post_date DESC";
 
-        $posts_with_tweets = $wpdb->get_col($wpdb->prepare($query, self::TWEET_COMMENT_MAP));
+        $posts_with_tweets = $wpdb->get_col($wpdb->prepare($query, SocialCommentsConstants::TWEET_COMMENT_MAP));
 
         // for each post, repopulate the tweets
         if ($posts_with_tweets) {
@@ -145,7 +128,7 @@ class TwitterFetcher extends Fetcher {
      */
     public function repopulateTweetText($post_id) {
         // Get the tweet comment map
-        $tweet_comment_map = get_post_meta($post_id, self::TWEET_COMMENT_MAP, TRUE);
+        $tweet_comment_map = get_post_meta($post_id, SocialCommentsConstants::TWEET_COMMENT_MAP, TRUE);
 
         if (is_array($tweet_comment_map)) {
             foreach($tweet_comment_map as $tweet_id => $comment_id) {
@@ -296,9 +279,9 @@ class TwitterFetcher extends Fetcher {
      */
     private function getCommentType($tweet) {
         if (property_exists($tweet, 'retweeted_status')) {
-            return self::TWITTER_RETWEETS;
+            return SocialCommentsConstants::TWITTER_RETWEETS;
         } else {
-            return self::TWITTER_TWEETS;
+            return SocialCommentsConstants::TWITTER_TWEETS;
         }
     }
 
@@ -309,16 +292,15 @@ class TwitterFetcher extends Fetcher {
      * @author Sudar
      */
     private function storeTweetAndCommentIDs($post_id, $comment_id, $tweet_id) {
-        $tweet_comment_map = get_post_meta($post_id, self::TWEET_COMMENT_MAP, TRUE);
+        $tweet_comment_map = get_post_meta($post_id, SocialCommentsConstants::TWEET_COMMENT_MAP, TRUE);
 
         if (!is_array($tweet_comment_map)) {
             $tweet_comment_map = array();
-            //add_post_meta($post_id, self::TWEET_COMMENT_MAP, $tweet_comment_map,  TRUE);
         }
 
         $tweet_comment_map[$tweet_id] = $comment_id;
 
-        update_post_meta($post_id, self::TWEET_COMMENT_MAP, $tweet_comment_map);
+        update_post_meta($post_id, SocialCommentsConstants::TWEET_COMMENT_MAP, $tweet_comment_map);
         print_r($tweet_comment_map);        
 
     }
@@ -330,11 +312,11 @@ class TwitterFetcher extends Fetcher {
      * @author Sudar
      */
     private function storeTweetAuthor($comment_id, $twitter_id) {
-        update_comment_meta($comment_id, self::COMMENT_AUTHOR_TWITTER, $twitter_id);
+        update_comment_meta($comment_id, SocialCommentsConstants::COMMENT_AUTHOR_TWITTER, $twitter_id);
 
         // TODO: Find the proper size that's needed
         $profile_image = TwitterProfileImage::getProfileImage($twitter_id);
-        update_comment_meta($comment_id, self::COMMENT_AUTHOR_TWITTER_PROFILE, $profile_image);
+        update_comment_meta($comment_id, SocialCommentsConstants::COMMENT_AUTHOR_TWITTER_PROFILE, $profile_image);
     }
 
     /**
@@ -344,7 +326,7 @@ class TwitterFetcher extends Fetcher {
      * @author Sudar
      */
     private function isTweetAlreadyInserted($post_id, $tweet_id) {
-        $tweet_comment_map = get_post_meta($post_id, self::TWEET_COMMENT_MAP, TRUE);
+        $tweet_comment_map = get_post_meta($post_id, SocialCommentsConstants::TWEET_COMMENT_MAP, TRUE);
         if (is_array($tweet_comment_map)) {
             return array_key_exists($tweet_id, $tweet_comment_map);
         } else {

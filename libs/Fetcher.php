@@ -8,9 +8,6 @@
  */ 
 class Fetcher {
     
-    // custome field name to store short urls
-    const SHORTURLS = 'shorturls';
-
     /**
      * Get Post id of a post based on permalink
      *
@@ -54,7 +51,7 @@ class Fetcher {
     protected function updateShortUrls($post_id_url_map) {
 
         foreach($post_id_url_map as $post_id => $short_url) {
-            $shorturls = get_post_meta($post_id, self::SHORTURLS, TRUE);
+            $shorturls = get_post_meta($post_id, SocialCommentsConstants::SHORTURLS, TRUE);
 
             if (!is_array($shorturls)) {
                 $shorturls = array();		
@@ -63,7 +60,7 @@ class Fetcher {
             // Insert into post meta if it not preset already
             if (!array_search($short_url, $shorturls)) {
                 $shorturls[$short_url] = $short_url;
-                update_post_meta($post_id, self::SHORTURLS, $shorturls);
+                update_post_meta($post_id, SocialCommentsConstants::SHORTURLS, $shorturls);
             }
         }
     }
