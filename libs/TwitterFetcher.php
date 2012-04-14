@@ -109,9 +109,6 @@ class TwitterFetcher extends Fetcher {
                 // update the comment
                 $this->updateComment($commentData);
             } 
-
-            // clean comment cache
-            clean_comment_cache(array_values($tweet_comment_map));
         }
     }
     
