@@ -303,7 +303,11 @@ class TwitterFetcher extends Fetcher {
      */
     private function isTweetAlreadyInserted($post_id, $tweet_id) {
         $tweet_comment_map = get_post_meta($post_id, self::TWEET_COMMENT_MAP, TRUE);
-        return array_key_exists($tweet_id, $tweet_comment_map);
+        if (is_array($tweet_comment_map)) {
+            return array_key_exists($tweet_id, $tweet_comment_map);
+        } else {
+            return FALSE;
+        }
     }
 
     private function checkRateLimit() {
