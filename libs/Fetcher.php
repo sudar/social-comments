@@ -39,7 +39,10 @@ class Fetcher {
      */
     protected function updateComment($commentData) {
         print_r($commentData);
-        return wp_update_comment($commentData);
+        // We need to temporaray disable the filter to insert classes in <blockquote> tag
+        remove_filter('pre_comment_content', 'wp_filter_kses');
+        wp_update_comment($commentData);
+        add_filter('pre_comment_content', 'wp_filter_kses');
     }
 
     /**
