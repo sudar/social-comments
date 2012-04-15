@@ -37,7 +37,7 @@ class TwitterProfileImage {
             }
         } else {
             // Something bad happened
-            // TODO: Handle this
+            return '';
         }
 
     }

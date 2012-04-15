@@ -12,15 +12,15 @@ class SocialCommentsConstants {
 	//-------
     // comment Types
     const TWITTER_TWEETS = 'twitter_tweets';
+    const TWITTER_RETWEETS = 'twitter_retweets';
 
     // Post meta keys
-    const TWITTER_RETWEETS = 'twitter_retweets';
     const TWEET_COMMENT_MAP = 'tweet_comment_map';
 	const PM_REFERED_BY_TWITTER = 'refered_by_twitter';
 
     // comment Meta Keys
     const COMMENT_AUTHOR_TWITTER = 'comment_author_twitter';
-    const COMMENT_AUTHOR_TWITTER_PROFILE = 'comment_author_twitter_profile';
+    const COMMENT_AUTHOR_TWITTER_PROFILE = 'comment_author_twitter_profile_image';
 
     // options
     const LAST_USERTIMELINE_TWEET = 'last_usertimeline_tweet';
