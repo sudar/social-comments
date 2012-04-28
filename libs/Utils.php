@@ -5,6 +5,7 @@
  * @package SocialComments
  * @subpackage Util
  * @author Sudar
+ * Copied from http://sudarmuthu.com/blog/expand-any-shortened-url-using-php
  */ 
 class Utils {
     /**
@@ -12,19 +13,21 @@ class Utils {
     *
     * @param <string> $shortUrl - Short url
     * @return <string> - Longer version of the short url
-    * TODO: Make it recursive to avoid double url shortening
     */
     static function expandURL($shortUrl) {
         //Get response headers
-        $response = get_headers($shortUrl, 1);
+        $response = get_headers($url, 1);
         //Get the location property of the response header. If failure, return original url
         $location = $response["Location"];
         if (isset($location)) {
             if (is_array($location)) {
-                return $location[count($location) - 1];
+                // t.co gives Location as an array
+                return self::expandURL($location[count($location) - 1]);
+            } else {
+                return self::expandURL($location);
             }
         }
-        return $shortUrl;
-    }    
+        return $url;
+    }
 }
 ?>
