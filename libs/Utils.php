@@ -16,10 +16,10 @@ class Utils {
     */
     static function expandURL($shortUrl) {
         //Get response headers
-        $response = get_headers($url, 1);
+        $response = get_headers($shortUrl, 1);
         //Get the location property of the response header. If failure, return original url
-        $location = $response["Location"];
-        if (isset($location)) {
+        if (array_key_exists('Location', $response)) {
+            $location = $response["Location"];
             if (is_array($location)) {
                 // t.co gives Location as an array
                 return self::expandURL($location[count($location) - 1]);
@@ -27,7 +27,7 @@ class Utils {
                 return self::expandURL($location);
             }
         }
-        return $url;
+        return $shortUrl;
     }
 }
 ?>
